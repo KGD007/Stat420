@@ -1,0 +1,20 @@
+unnamed-chunk-1	birthday	.Random.seed
+unnamed-chunk-2	beta_0	beta_1	beta_2	beta_3	beta_insig_0	beta_insig_1	beta_insig_2	beta_insig_3	F_value_insigni	F_value_signi	p_value_insigni	p_value_signi	r_square_insigni	r_square_signi	simulation
+unnamed-chunk-3	F_value_insigni	F_value_signi	i	p_value_insigni	p_value_signi	r_square_insigni	r_square_signi	sim_data	value
+unnamed-chunk-4	x
+unnamed-chunk-5	x
+unnamed-chunk-6	x
+unnamed-chunk-7	
+unnamed-chunk-8	
+unnamed-chunk-9	
+unnamed-chunk-10	
+unnamed-chunk-11	
+unnamed-chunk-12	
+unnamed-chunk-13	birthday
+unnamed-chunk-14	beta_0	beta_1	beta_2	beta_3	beta_4	beta_5	beta_6	count	counter	data	epsilon_i	i	index	j	model_1	model_2	model_3	model_4	model_5	model_6	model_7	model_8	model_9	sigma	test_data	Test_rmse	train_data	Train_rmse
+unnamed-chunk-15	Test_RMSE_Sigma_1
+unnamed-chunk-16	Test_RMSE_Sigma_2
+unnamed-chunk-17	Test_RMSE_Sigma_4
+unnamed-chunk-18	birthday
+unnamed-chunk-19	a	beta_0	beta_1	epsilon_i	i	j	k	l	local_model	n	reject_count	row_num	sigmaValues	sims	SimulateData	totalrows	x	y
+unnamed-chunk-20	i	n_10	n_20	n_30	sigma_result

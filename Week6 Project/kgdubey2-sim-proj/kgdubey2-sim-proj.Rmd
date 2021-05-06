@@ -1,0 +1,682 @@
+---
+title: 'Week 6 - Simulation Project'
+author: "STAT 420, Summer 2020, D. Unger"
+date: ''
+output:
+  html_document: 
+    theme: readable
+    toc: yes  
+  pdf_document: default
+urlcolor: cyan
+---
+
+***
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+options(scipen = 1, digits = 4, width = 80)
+library(knitr)
+opts_chunk$set(cache = TRUE, autodep = TRUE)
+```
+
+
+# Simulation Study 1: Significance of Regression
+
+#### INTRODUCTION
+
+The purpose of the study is to test the significance of regression against two models and check the behavior of Model when $\sigma$ varies. Here We will simulate from two different models:
+
+1. The **"significant"** model
+
+\[
+Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \epsilon_i
+\]
+
+where $\epsilon_i \sim N(0, \sigma^2)$ and
+
+- $\beta_0 = 3$,
+- $\beta_1 = 1$,
+- $\beta_2 = 1$,
+- $\beta_3 = 1$.
+
+
+2. The **"non-significant"** model
+
+\[
+Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \epsilon_i
+\]
+
+where $\epsilon_i \sim N(0, \sigma^2)$ and
+
+- $\beta_0 = 3$,
+- $\beta_1 = 0$,
+- $\beta_2 = 0$,
+- $\beta_3 = 0$.
+
+For both, we will consider a sample size of $25$ and three possible levels of noise. That is, three values of $\sigma$.
+
+- $n = 25$
+- $\sigma \in (1, 5, 10)$
+
+
+#### **Methods**
+
+```{r}
+birthday = 19890101
+set.seed(birthday)
+```
+
+
+```{r}
+# Defining Data frame which will contain F Stat value, P-value and R Squared value for different Sigma
+F_value_signi = data.frame(f_value_1 = rep(0, 2000), f_value_5 = rep(0, 2000), f_value_10 = rep(0, 2000))
+p_value_signi = data.frame(p_value_1 = rep(0, 2000), p_value_5 = rep(0, 2000), p_value_10 = rep(0, 2000))
+r_square_signi = data.frame(r_value_1 = rep(0, 2000), r_value_5 = rep(0, 2000), r_value_10 = rep(0, 2000))
+F_value_insigni = data.frame(f_value_1 = rep(0, 2000), f_value_5 = rep(0, 2000), f_value_10 = rep(0, 2000))
+p_value_insigni = data.frame(p_value_1 = rep(0, 2000), p_value_5 = rep(0, 2000), p_value_10 = rep(0, 2000))
+r_square_insigni = data.frame(r_value_1 = rep(0, 2000), r_value_5 = rep(0, 2000), r_value_10 = rep(0, 2000))
+#Beta values for Significant Model
+beta_0 = 3
+beta_1 = 1
+beta_2 = 1
+beta_3 = 1
+#Beta value for insignificant Model
+beta_insig_0 = 3
+beta_insig_1 = 0
+beta_insig_2 = 0
+beta_insig_3 = 0
+
+#Function which will accept input Data, Beta values and sigma and return vector of F Stat, P-value and R Squared
+simulation = function(data, beta_0,beta_1,beta_2,beta_3, sigma)
+{
+  epsilon_i = rnorm(nrow(sim_data), mean = 0, sd = sigma)
+  sim_data$Y = beta_0 + beta_1 * sim_data$x1 + beta_2 * sim_data$x2 + beta_3 * sim_data$x3 + epsilon_i
+  model = lm(Y ~ ., data = sim_data)
+  
+  Fvlaue = summary(model)$fstatistic[1]
+  rsquare = summary(model)$r.squared
+  pvalue = pf(Fvlaue, summary(model)$fstatistic[2], summary(model)$fstatistic[3], lower.tail = FALSE)
+  c(Fvlaue, rsquare, pvalue)
+
+}
+
+```
+
+
+```{r}
+# Read data from file
+sim_data = read.csv('study_1.csv')
+
+#Simulate model for 2000 times and save return values in Data Frames
+for (i in 1 : 2000)
+{
+  
+  value = simulation(sim_data, beta_0, beta_1, beta_2, beta_3, 1)
+  F_value_signi[i, "f_value_1"] = value[1]
+  r_square_signi[i, "r_value_1"] = value[2]
+  p_value_signi[i, "p_value_1"] = value[3]
+  
+   value = simulation(sim_data, beta_insig_0, beta_insig_1, beta_insig_2, beta_insig_3, 1)
+  F_value_insigni[i, "f_value_1"] = value[1]
+  r_square_insigni[i, "r_value_1"] = value[2]
+   p_value_insigni[i, "p_value_1"] = value[3]
+ 
+   
+     value = simulation(sim_data, beta_0, beta_1, beta_2, beta_3, 5)
+   F_value_signi[i, "f_value_5"] = value[1]
+   r_square_signi[i, "r_value_5"] = value[2]
+   p_value_signi[i, "p_value_5"] = value[3]
+   
+   value = simulation(sim_data, beta_insig_0, beta_insig_1, beta_insig_2, beta_insig_3, 5)
+   F_value_insigni[i, "f_value_5"] = value[1]
+   r_square_insigni[i, "r_value_5"] = value[2]
+   p_value_insigni[i, "p_value_5"] = value[3]
+   
+   
+     value = simulation(sim_data, beta_0, beta_1, beta_2, beta_3, 10)
+   F_value_signi[i, "f_value_10"] = value[1]
+   r_square_signi[i, "r_value_10"] = value[2]
+   p_value_signi[i, "p_value_10"] = value[3]
+   
+   value = simulation(sim_data, beta_insig_0, beta_insig_1, beta_insig_2, beta_insig_3, 10)
+   F_value_insigni[i, "f_value_10"] = value[1]
+   r_square_insigni[i, "r_value_10"] = value[2]
+   p_value_insigni[i, "p_value_10"] = value[3]
+}
+
+
+```
+
+#### **RESULTS** 
+
+#### **F Stat Results**
+```{r}
+par(mfrow = c(1,2))
+hist(F_value_signi$f_value_1,
+     main = "F stat Sigma = 1",
+     border = "blue",
+     xlab = "F Statistic",
+     prob = TRUE,
+     breaks = 40
+     )
+x = F_value_signi$f_value_1
+curve( df(x, df1 = 3, df2 = 21), col = "darkorange", add = TRUE, lwd = 3)
+
+hist(F_value_insigni$f_value_1,
+     main = "F stat Sigma = 1",
+     border = "blue",
+     xlab = "F Statistic",
+     prob = TRUE,
+     breaks = 40
+     )
+x = F_value_insigni$f_value_1
+curve( df(x, df1 = 3, df2 = 21), col = "darkorange", add = TRUE, lwd = 3)
+
+
+```
+
+```{r}
+par(mfrow = c(1,2))
+hist(F_value_signi$f_value_5,
+     main = "F stat Sigma = 5",
+     border = "blue",
+     xlab = "F Statistic",
+     prob = TRUE,
+     breaks = 40
+     )
+x = F_value_signi$f_value_5
+curve( df(x, df1 = 3, df2 = 21), col = "darkorange", add = TRUE, lwd = 3)
+
+hist(F_value_insigni$f_value_5,
+     main = "F stat Sigma = 5",
+     border = "blue",
+     xlab = "F Statistic",
+     prob = TRUE,
+     breaks = 40
+     )
+x = F_value_insigni$f_value_5
+curve( df(x, df1 = 3, df2 = 21), col = "darkorange", add = TRUE, lwd = 3)
+
+```
+
+```{r}
+par(mfrow = c(1,2))
+hist(F_value_signi$f_value_10,
+     main = "F stat Sigma = 10",
+     border = "blue",
+     xlab = "F Statistic",
+     prob = TRUE,
+     breaks = 40
+     )
+x = F_value_signi$f_value_10
+curve( df(x, df1 = 3, df2 = 21), col = "darkorange", add = TRUE, lwd = 3)
+
+hist(F_value_insigni$f_value_10,
+     main = "F-stat Sigma = 10",
+     border = "blue",
+     xlab = "F Statistic",
+     prob = TRUE,
+     breaks = 40
+     )
+x = F_value_insigni$f_value_10
+curve( df(x, df1 = 3, df2 = 21), col = "darkorange", add = TRUE, lwd = 3)
+
+```
+
+**P-Value Results**
+
+```{r}
+par(mfrow = c(1,2))
+hist(p_value_signi$p_value_1,
+     main = "P_value Sigma = 1",
+     border = "blue",
+     xlab = "P-Value",
+     prob = TRUE,
+     breaks = 40
+     )
+
+hist(p_value_insigni$p_value_1,
+     main = "P_value Sigma = 1",
+     border = "blue",
+     xlab = "P-Value",
+     prob = TRUE,
+     breaks = 40
+     )
+```
+
+
+```{r}
+par(mfrow = c(1,2))
+hist(p_value_signi$p_value_5,
+     main = "P_value Sigma = 5",
+     border = "blue",
+     xlab = "P-Value",
+     prob = TRUE,
+     breaks = 40
+     )
+
+hist(p_value_insigni$p_value_5,
+     main = "P_value Sigma = 5",
+     border = "blue",
+     xlab = "P-Value",
+     prob = TRUE,
+     breaks = 40
+     )
+```
+
+```{r}
+par(mfrow = c(1,2))
+hist(p_value_signi$p_value_10,
+     main = "P_value Sigma = 10",
+     border = "blue",
+     xlab = "P-Value",
+     prob = TRUE,
+     breaks = 40
+     )
+
+hist(p_value_insigni$p_value_10,
+     main = "P_value Sigma = 10",
+     border = "blue",
+     xlab = "P-Value",
+     prob = TRUE,
+     breaks = 40
+     )
+```
+
+**R squared Results**
+
+```{r}
+par(mfrow = c(1,2))
+hist(r_square_signi$r_value_1,
+     main = "R^2 Sigma = 1",
+     border = "blue",
+     xlab = "R Squared",
+     prob = TRUE,
+     breaks = 40
+     )
+
+hist(r_square_insigni$r_value_1,
+     main = "R^2 Sigma = 1",
+     border = "blue",
+     xlab = "R Squared",
+     prob = TRUE,
+     breaks = 40
+     )
+```
+
+
+```{r}
+par(mfrow = c(1,2))
+hist(r_square_signi$r_value_5,
+     main = "R^2 Sigma = 5",
+     border = "blue",
+     xlab = "R Squared",
+     prob = TRUE,
+     breaks = 40
+     )
+
+hist(r_square_insigni$r_value_5,
+     main = "R^2 Sigma = 5",
+     border = "blue",
+     xlab = "R Squared",
+     prob = TRUE,
+     breaks = 40
+     )
+```
+
+
+```{r}
+par(mfrow = c(1,2))
+hist(r_square_signi$r_value_10,
+     main = "R^2 Sigma = 10",
+     border = "blue",
+     xlab = "R Squared",
+     prob = TRUE,
+     breaks = 40
+     )
+
+hist(r_square_insigni$r_value_10,
+     main = "R^2 Sigma = 10",
+     border = "blue",
+     xlab = "R Squared",
+     prob = TRUE,
+     breaks = 40
+     )
+```
+
+## DISCUSSION
+
+#### F Statistic
+
+So after 2000 simulation  of models, we have saved F stat values of all simulations and we will try to align these values with F Distribution.
+
+When we align F Distribution curve with F state value of Sigma = 1, we see horizontal line with histogram. This shows all F stat values are more than F-critical value which will have p-value very less and makes model very significant.
+
+But as we increase Sigma, (i.e. 5 and 10) we see F distribution curve starts align with histogram. That is expected because now variance of error is also increasing so significance of models start decreasing.
+
+#### p-value
+
+For Insignificant Model, we can see uniform distribution of p-value from 0 to 1 that shows no linear relationship between Predictor and Predictions which is true. 
+
+But for Significant model as "Sigma" is low i.e. (Sigma = 1 or distribution of error is low) more of frequency of p-value is close to "Zero" which shows linear relationship. However as we increase Sigma (i.e. 5 and then 10) we can see more frequency of p-value starts shifitng towards 1. So if we keep increasing Sigma value, we will reach the point where we will have uniform distribution of p-value equal to Insignificant Model.
+
+#### R Squared
+
+Same as p-value we can describe R-Squared. For Insignificant Model, we see Right Skewed distribution which suggest most of R^2 value is close to Zero means "proportion of the variance for a dependent variable explained by an independent variable or variables in a regression model is close to Zero". Means No or less relation between Predictor and Predictions.
+
+But in Significant Model as "Sigma" is low i.e. (Sigma = 1 or distribution of error is low) Histogram is Left Skewed Distribution which means more of frequency of R^2 is close to 1 and that shows significant relationship relation between predictor and predictions and performance of model is also doing good. However as we increase Sigma (i.e. 5 and then 10), we see curve start moving from Left Skewed to Right Skewed Distribution. So if we keep increasing Sigma value, we will reach the point where we will have Right Skewed Distribution of R^2 equal to Insignificant Model.
+
+# Simulation Study 2: Using RMSE for Selection?
+
+#### INTRODUCTION
+
+In this study, first we will construct a equation with some predictors (6 predictors) out of all predictors and calculate prediction value with different number of $\sigma$.
+Then based on calculated prediction value, first we will divide data into Train and Test and fit 9 models with continuously increasing number of predictors and save RMSE value for each model for Train and Test data for different $\sigma$. We will simulated this process 1000 times for each $\sigma$ and then we will check model behavior based on saved RMSE value and try to find based fit model out of 9. 
+
+Equation to calculate Y value
+
+\[
+Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \beta_4 x_{i4} + \beta_5 x_{i5} + \beta_6 x_{i6} + \epsilon_i
+\]
+
+- $\beta_0 = 0$,
+- $\beta_1 = 3$,
+- $\beta_2 = -4$,
+- $\beta_3 = 1.6$,
+- $\beta_4 = -1.1$,
+- $\beta_5 = 0.7$,
+- $\beta_6 = 0.5$.
+
+- $n = 500$
+- $\sigma \in (1, 2, 4)$
+
+
+**nine** models, with forms:
+
+- `y ~ x1`
+- `y ~ x1 + x2`
+- `y ~ x1 + x2 + x3`
+- `y ~ x1 + x2 + x3 + x4`
+- `y ~ x1 + x2 + x3 + x4 + x5`
+- `y ~ x1 + x2 + x3 + x4 + x5 + x6`, the correct form of the model as noted above
+- `y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7`
+- `y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8`
+- `y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9`
+
+For each model, calculate Train and Test RMSE.
+
+\[
+\text{RMSE}(\text{model, data}) = \sqrt{\frac{1}{n} \sum_{i = 1}^{n}(y_i - \hat{y}_i)^2}
+\]
+
+#### METHODS
+
+```{r}
+birthday = 19890101
+set.seed(birthday)
+```
+
+
+```{r}
+
+data = read.csv('study_2.csv')
+beta_0 = 0
+beta_1 =  3
+beta_2 = -4
+beta_3 = 1.6
+beta_4 = -1.1
+beta_5 = 0.7
+beta_6 = 0.5
+sigma = c(1, 2, 4)
+
+# Creating Data Train and Test RMSE data frame
+
+Train_rmse = data.frame("Model_1_1" = rep(0, 1000), "Model_2_1" = rep(0, 1000), "Model_3_1" = rep(0, 1000), "Model_4_1" = rep(0, 1000), "Model_5_1" = rep(0, 1000), "Model_6_1" = rep(0, 1000), "Model_7_1" = rep(0, 1000),"Model_8_1" = rep(0, 1000), "Model_9_1" = rep(0, 1000),"Model_1_2" = rep(0, 1000), "Model_2_2" = rep(0, 1000), "Model_3_2" = rep(0, 1000), "Model_4_2" = rep(0, 1000), "Model_5_2" = rep(0, 1000), "Model_6_2" = rep(0, 1000), "Model_7_2" = rep(0, 1000),"Model_8_2" = rep(0, 1000), "Model_9_2" = rep(0, 1000),"Model_1_4" = rep(0, 1000), "Model_2_4" = rep(0, 1000), "Model_3_4" = rep(0, 1000), "Model_4_4" = rep(0, 1000), "Model_5_4" = rep(0, 1000), "Model_6_4" = rep(0, 1000), "Model_7_4" = rep(0, 1000),"Model_8_4" = rep(0, 1000), "Model_9_4" = rep(0, 1000) )
+
+Test_rmse = data.frame("Model_1_1" = rep(0, 1000), "Model_2_1" = rep(0, 1000), "Model_3_1" = rep(0, 1000), "Model_4_1" = rep(0, 1000), "Model_5_1" = rep(0, 1000), "Model_6_1" = rep(0, 1000), "Model_7_1" = rep(0, 1000),"Model_8_1" = rep(0, 1000), "Model_9_1" = rep(0, 1000),"Model_1_2" = rep(0, 1000), "Model_2_2" = rep(0, 1000), "Model_3_2" = rep(0, 1000), "Model_4_2" = rep(0, 1000), "Model_5_2" = rep(0, 1000), "Model_6_2" = rep(0, 1000), "Model_7_2" = rep(0, 1000),"Model_8_2" = rep(0, 1000), "Model_9_2" = rep(0, 1000),"Model_1_4" = rep(0, 1000), "Model_2_4" = rep(0, 1000), "Model_3_4" = rep(0, 1000), "Model_4_4" = rep(0, 1000), "Model_5_4" = rep(0, 1000), "Model_6_4" = rep(0, 1000), "Model_7_4" = rep(0, 1000),"Model_8_4" = rep(0, 1000), "Model_9_4" = rep(0, 1000) )
+
+# Simulation is starting
+
+counter = 0
+count = 0
+for (j in 1: length(sigma))
+{
+  
+  counter = count + 1
+  
+for (i in 1:1000)
+{
+  # generating error
+  epsilon_i = rnorm(nrow(data), mean = 0, sd = sigma[j])
+  # calculating Y
+  data$y =  beta_0 + beta_1 * data$x1 + beta_2 * data$x2 + beta_3 * data$x3 + beta_4 * data$x4 + beta_5 * data$x5 + beta_6 * data$x6 + epsilon_i
+  # random selecting 250 index out of 500
+  index  = sample(1:nrow(data), nrow(data)/2 )
+  #Declare  Train data set
+  train_data = data[c(index), ]
+  #Declare  Test data set
+  test_data = data[-c(index),]
+  
+  count = counter
+  # Fir all models
+  model_1 = lm(y ~ x1, data = train_data)
+  model_2 = lm(y ~ x1 + x2, data = train_data)
+  model_3 = lm(y ~ x1 + x2 + x3, data = train_data)
+  model_4 = lm(y ~ x1 + x2 + x3 + x4, data = train_data)
+  model_5 = lm(y ~ x1 + x2 + x3 + x4 + x5, data = train_data)
+  model_6 = lm(y ~ x1 + x2 + x3 + x4 + x5 + x6, data = train_data)
+  model_7 = lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7, data = train_data)
+  model_8 = lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8, data = train_data)
+  model_9 = lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9, data = train_data)
+  
+  # saving all models TRAIN and Test RMSE
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_1, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_1, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_2, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_2, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_3, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_3, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_4, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_4, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_5, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_5, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_6, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_6, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_7, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_7, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_8, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_8, newdata = test_data)) ^ 2))
+  count = count + 1
+  Train_rmse[i, count] = sqrt(mean((train_data$y - predict(model_9, newdata = train_data)) ^ 2))
+  Test_rmse[i, count] = sqrt(mean((test_data$y - predict(model_9, newdata = test_data)) ^ 2))
+
+}
+}
+
+
+```
+
+#### RESULT
+
+```{r}
+
+# Plots for model wins when Sigma = 1
+Test_RMSE_Sigma_1 = subset(Test_rmse, select = c("Model_1_1", "Model_2_1", "Model_3_1", "Model_4_1", "Model_5_1", "Model_6_1", "Model_7_1","Model_8_1", "Model_9_1"))
+colnames(Test_RMSE_Sigma_1) = c("Model1", "Model2", "Model3", "Model4", "Model5", "Model6", "Model7", "Model8", "Model9")
+barplot(table(colnames(Test_RMSE_Sigma_1)[apply(Test_RMSE_Sigma_1,1,which.min)]),
+  xlab = "Models",
+  ylab = "Frequency",
+  main = "Frequency of lowest RMSE - Sigma 1",
+  col = rainbow(9)
+  )
+
+```
+
+```{r}
+# Plots for model wins when Sigma = 2
+
+Test_RMSE_Sigma_2 = subset(Test_rmse, select = c("Model_1_2", "Model_2_2", "Model_3_2", "Model_4_2", "Model_5_2", "Model_6_2", "Model_7_2","Model_8_2", "Model_9_2" ))
+colnames(Test_RMSE_Sigma_2) = c("Model1", "Model2", "Model3", "Model4", "Model5", "Model6", "Model7", "Model8", "Model9")
+barplot(table(colnames(Test_RMSE_Sigma_2)[apply(Test_RMSE_Sigma_2,1,which.min)]),
+  xlab = "Models",
+  ylab = "Frequency",
+  main = "Frequency of lowest RMSE - Sigma 2",
+  col = rainbow(9)
+  )
+
+```
+
+```{r}
+
+# Plots for model wins when Sigma = 4
+Test_RMSE_Sigma_4 = subset(Test_rmse, select = c("Model_1_4", "Model_2_4", "Model_3_4", "Model_4_4", "Model_5_4", "Model_6_4", "Model_7_4","Model_8_4", "Model_9_4"))
+colnames(Test_RMSE_Sigma_4) = c("Model1", "Model2", "Model3", "Model4", "Model5", "Model6", "Model7", "Model8", "Model9")
+barplot(table(colnames(Test_RMSE_Sigma_4)[apply(Test_RMSE_Sigma_4,1,which.min)]),
+  xlab = "Models",
+  ylab = "Frequency",
+  main = "Frequency of lowest RMSE - Sigma 4",
+  col = rainbow(9)
+  )
+```
+
+#### DISCUSSION
+
+- From above bar plots we can see Model_6 contains less RMSE which is obvious because original model is trained with same 6 predictors. On Average simulation is selecting correct model.
+- As we increasing level of noise, means we are increasing variance of error, we see more and more models start having lesser RMSE hence possibility of winning also increases for other models.
+
+# Simulation Study 3: Power
+
+In this simulation study we will investigate the **power** of the significance of regression test for simple linear regression. 
+
+\[
+H_0: \beta_{1} = 0 \ \text{vs} \ H_1: \beta_{1} \neq 0
+\]
+
+To do so we will simulate from the model
+
+\[
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i
+\]
+
+where $\epsilon_i \sim N(0, \sigma^2)$.
+
+For simplicity, we will let $\beta_0 = 0$, thus $\beta_1$ is essentially controlling the amount of "signal." We will then consider different signals, noises, and sample sizes:
+
+- $\beta_1 \in (-2, -1.9, -1.8, \ldots, -0.1, 0, 0.1, 0.2, 0.3, \ldots 1.9, 2)$
+- $\sigma \in (1, 2, 4)$
+- $n \in (10, 20, 30)$
+
+We will hold the significance level constant at $\alpha = 0.05$.
+
+For each possible $\beta_1$ and $\sigma$ combination, simulate from the true model at least $1000$ times. Each time, perform the significance of the regression test. To estimate the power with these simulations, and some $\alpha$, use
+
+\[
+\hat{\text{Power}} = \hat{P}[\text{Reject } H_0 \mid H_1 \text{ True}] = \frac{\text{# Tests Rejected}}{\text{# Simulations}}
+\]
+
+#### METHODS
+
+```{r}
+# Set seed
+birthday = 19890101;
+set.seed(birthday);
+```
+
+```{r}
+# General vars
+
+beta_0 = 0
+beta_1 = seq(-2, 2, by=0.1)
+sigmaValues = c(1, 2, 4)
+n = c(10, 20, 30)
+a = 0.05
+sims = 1000
+
+totalrows = length(sigmaValues) * length(n) * length(beta_1)
+
+# Tracking var
+SimulateData = data.frame("sigma" = rep(0, totalrows), "n" = rep(0, totalrows), "beta" = rep(0, totalrows), "power" = rep(0, totalrows));
+row_num = 1
+
+# Loop-d-loop
+for(i in 1:length(sigmaValues)){
+  for(j in 1:length(n)){
+    # Create x values
+    x = seq(0, 5, length = n[j]);
+    
+    for(k in 1:length(beta_1)){
+      reject_count = 0;
+
+      for(l in 1:sims){
+        # Set epsilon
+        epsilon_i = rnorm(n[j], mean = 0, sd = sigmaValues[i]);
+        
+        # Calculating our y values
+        y = beta_0 + beta_1[k] * x + epsilon_i;
+      
+        # fit the model
+        local_model = lm(y ~ x);
+        
+        if(summary(local_model)$coefficients[2,"Pr(>|t|)"] < a){
+          reject_count = reject_count + 1;
+        }
+      }
+      
+      # Store results
+      SimulateData[row_num, 1] = sigmaValues[i];
+      SimulateData[row_num, 2] = n[j];
+      SimulateData[row_num, 3] = beta_1[k]
+      SimulateData[row_num, 4] = reject_count / sims;
+      row_num = row_num + 1;
+    }
+  }
+}
+```
+
+#### RESULTS
+
+```{r}
+
+for(i in 1:length(sigma)) {
+  
+  sigma_result = subset(SimulateData,  SimulateData$sigma == sigmaValues[i])
+  n_10 = subset(SimulateData, SimulateData$sigma == sigmaValues[i] & SimulateData$n == 10)
+  n_20 = subset(SimulateData, SimulateData$sigma == sigmaValues[i] & SimulateData$n == 20)
+  n_30 = subset(SimulateData, SimulateData$sigma == sigmaValues[i] & SimulateData$n == 30)
+  
+   plot(sigma_result$beta, sigma_result$power, 
+       type = "n",
+       main = paste("Power by Beta when sigma = ", sigmaValues[i]), 
+       ylab = "Power",
+       xlab = "Beta_1"
+       )
+  lines(n_10$beta, n_10$power, col = "yellow")
+  lines(n_20$beta, n_20$power, col = "red")
+  lines(n_30$beta, n_30$power, col = "blue")
+  legend(
+    "top", 
+    legend = c("n = 10", "n = 20", "n = 30"), 
+    col = c("yellow", "red", "blue"),
+    lty = 1,
+    cex = 0.8
+    )
+  
+}
+
+```
+
+#### DISCUSSION
+
+From above plots we can say that 
+
+- as σ increases power decreases for values of β1 as we further go away from 0
+- as n increases, power also increases which explains that larger values of n provide the model with higher power values. 
+- β1 values close to zero have the least power values as we would expect
+- In conclusion we can say that the highest values of power can be achieved with small σ values, large n values and β1 values that are farther away from 0.
+- I tested same with 3000 simulation and got a little difference. SO we can say 1000 simulations are sufficient.

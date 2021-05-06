@@ -1,0 +1,350 @@
+---
+title: "project"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+#Introduction
+
+```{r, warning=FALSE, message=FALSE}
+library(readr)
+library(ggplot2)
+library(knitr)
+library(caret)
+library(leaps)
+library(scales)
+library(RColorBrewer)
+library(lmtest)
+```
+
+Retrieving  data
+
+```{r cars}
+data = read.csv("housing.csv")
+```
+
+
+```{r}
+head(data, 10)
+str(data)
+```
+
+
+```{r}
+ggplot(data, aes(x = longitude, y = latitude, color = median_house_value, 
+                      hma = housing_median_age, tr = total_rooms, tb = total_bedrooms,
+                      hh = households, mi = median_income)) +
+              geom_point(aes(size = population), alpha = 0.4) +
+              xlab("Longitude") +
+              ylab("Latitude") +
+              ggtitle("Data Map - Longtitude vs Latitude and Associated Variables") +
+              theme(plot.title = element_text(hjust = 0.5)) +
+              scale_color_distiller(palette = "Paired", labels = comma) +
+              labs(color = "Median House Value (in $USD)", size = "Population")
+```
+
+
+##MATHODS
+
+#Missing Data 
+
+```{r}
+#checking total number of rows having missing values
+sum(is.na(data))
+```
+
+```{r}
+#Deleting 207 missing rows from data
+data = na.omit(data)
+str(data)
+```
+
+
+#Categorical Variables
+
+```{r}
+#changing variable to categorical variables
+is.factor(data$ocean_proximity)
+data$ocean_proximity = as.factor(data$ocean_proximity)
+levels(data$ocean_proximity)
+```
+
+
+```{r}
+barplot(table(data$ocean_proximity), main="Age Count of 10 Students",
+          xlab="ocean_proximity",
+          ylab="Count",
+          border="red",
+          col="blue",
+          density=10)
+
+```
+
+```{r}
+par(mfrow = c(3, 3))
+hist(data$longitude, breaks = 20, main = "longitude", border="darkorange", col="dodgerblue")
+hist(data$latitude, breaks = 20, main = "latitude", border="darkorange", col="dodgerblue")
+hist(data$housing_median_age, breaks = 20, main = "housing_median_age", border="darkorange", col="dodgerblue")
+hist(data$total_rooms, breaks = 20, main = "total_rooms", border="darkorange", col="dodgerblue")
+hist(data$total_bedrooms, breaks = 20, main = "total_bedrooms", border="darkorange", col="dodgerblue")
+hist(data$population, breaks = 20, main = "population", border="darkorange", col="dodgerblue")
+hist(data$households, breaks = 20, main = "households", border="darkorange", col="dodgerblue")
+hist(data$median_income, breaks = 20, main = "median_income", border="darkorange", col="dodgerblue")
+hist(data$median_house_value, breaks = 20, main = "median_house_value", border="darkorange", col="dodgerblue")
+```
+
+
+```{r}
+pairs(data, col = "dodgerblue")
+```
+```{r}
+kable(t(cor(data[,-10])))
+```
+
+**One thing that sticks out is the high collinearity between longitude and latitude, households and total_bedrooms, and between households and total_rooms.**
+
+#Training and Test Data
+
+```{r}
+set.seed(100)
+totalnrows = nrow(data)
+# retrieveing 80% data in traning data
+x = sample(totalnrows, floor(totalnrows * .80) )
+train_data = data[x, ]
+test_data = data[-x, ]
+```
+
+
+```{r}
+#Traning additive Model
+model_add = lm(median_house_value ~ ., data = train_data)
+summary(model_add)
+summary(model_add)$adj.r.squared
+
+```
+
+**By analyzing p-vlaue of all Beta variable in Additive model, we can say that we fail to reject that Null Hypothesis that Beta value of any variable is Zero. hence all variables are  playing important role in prediction of House Median Income. And Adjusted R squared value of Model is 64.6%**
+
+```{r}
+#Training Interaction Model
+model_int = lm(median_house_value ~ . ^ 2, data = train_data)
+summary(model_int)$adj.r.squared
+```
+
+**In interaction model we can see increment of Model performance by Adjusted R Squared which is 70.3%**
+
+```{r}
+# Testing Interaction model with respect to Additive Model
+anova(model_int, model_add)
+```
+
+**P-value of test is 2.2e-16  which is very less hence we can consider Interactive models beta variables**
+
+
+##Improve Model Using AIC and BIC
+
+```{r}
+
+model_add_aic = step(model_add, direction = "backward", trace = 0)
+summary(model_add_aic)$adj.r.squared
+
+model_add_bic = step(model_add, direction = "backward", trace = 0, k = log(nrow(train_data)))
+summary(model_add_bic)$adj.r.squared
+
+model_int_aic = step(model_int, direction = "backward", trace = 0)
+summary(model_int_aic)$adj.r.squared
+
+model_int_bic = step(model_int, direction = "backward", trace = 0, k = log(nrow(train_data)))
+summary(model_int_bic)$adj.r.squared
+
+
+```
+
+```{r}
+beginning_mods_results = data.frame(
+  "Total Predictors" =
+    c("Additive Model" = extractAIC(model_add)[1],
+      "Interaction Model" = extractAIC(model_int)[1],
+      "AIC_additive Model" = extractAIC(model_add_aic)[1],
+      "AIC_Int Model" = extractAIC(model_int_aic)[1],
+      "BIC_additive Model" = extractAIC(model_add_bic)[1],
+      "BIC_Int Model" = extractAIC(model_int_bic)[1]),
+  "AIC" =
+    c("Additive Model" = extractAIC(model_add)[2],
+       "Interaction Model" = extractAIC(model_int)[2],
+      "AIC_additive Model" = extractAIC(model_add_aic)[2],
+      "AIC_Int Model" = extractAIC(model_int_aic)[2],
+       "BIC_additive Model" = extractAIC(model_add_bic)[2],
+      "BIC_Int Model" = extractAIC(model_int_bic)[2]),
+  "Adj R-Squared" =
+    c("Additive Model" = summary(model_add)$adj.r.squared,
+      "Interaction Model" = summary(model_int)$adj.r.squared,
+      "AIC_additive Model" =summary(model_add_aic)$adj.r.squared,
+      "AIC_Int Model" = summary(model_int_aic)$adj.r.squared,
+       "BIC_additive Model" =summary((model_add_bic))$adj.r.squared,
+      "BIC_Int Model" = summary(model_int_bic)$adj.r.squared))
+
+kable(beginning_mods_results, align = c("c", "r"))
+```
+
+**We see that the model with the best (i.e., lowest) AIC is Interection Model, with a score of 361268.2. However, although this model has the lowest AIC, it also has far more predictors (and therefore is more complex) than the other three models - 204 compared to 64 predictors for full_twoway_model, and 12 predictors for full_additive_model. This is something to keep in mind as we move forward, as model complexity should be taken into account.**
+
+
+```{r}
+diagnostics = function(model, alpha = .05, pointcol = "orange", linecol = "blue", plots = TRUE, tests = TRUE, pointtype = 16) {
+    if (plots == TRUE) {
+        par(mfrow = c(1, 3))
+        plot(
+                fitted(model),
+                resid(model),
+                pch = pointtype,
+                xlab = "Fitted Values",
+                ylab = "Residuals",
+                main = "Fitted vs Residuals",
+                col = pointcol
+            )
+        abline(h = 0, lwd = 2, col = linecol)
+        
+        qqnorm(
+                resid(model),
+                pch = pointtype,
+                main = "QQNorm Plot",
+                col = pointcol
+            )
+        qqline(
+                resid(model),
+                lwd = 2,
+                col = linecol
+                )
+        hist(
+            resid(model),
+            main = "Histogram of Residuals",
+            col = pointcol,
+            xlab = "Residuals",
+            ylab = "Frequency"
+            )
+    }
+    if (tests == TRUE) {
+        ks_test = ks.test(resid(model),y='pnorm',alternative='two.sided')
+        bp_test = bptest(model)
+        test_results = data.frame(
+          "Kolmogorov-Smirnov  Test" =
+            c("Test Statistic" = round(ks_test$statistic, 5),
+              "P-Value" = ks_test$p.value,
+              "Result" = ifelse(ks_test$p.value < alpha, "Reject", "Fail To Reject")),
+          "Breusch-Pagan Test" =
+            c("Test Statistic" = round(bp_test$statistic, 5),
+              "P-Value" = bp_test$p.value,
+              "Result" = ifelse(bp_test$p.value < alpha, "Reject", "Fail To Reject")))
+
+        kable(t(test_results), col.names = c("Test Statistic", "P-Value", "Decision"))
+    }
+}
+```
+
+```{r}
+diagnostics(model_add)
+diagnostics(model_int)
+
+diagnostics(model_add_aic)
+diagnostics(model_add_bic)
+diagnostics(model_int_aic)
+diagnostics(model_int_bic)
+
+
+```
+
+
+```{r}
+value = cooks.distance(model_add)
+sum(value > 4 / length(resid(model_add)))
+
+model_new_add =  lm(median_house_value ~ ., data = train_data, subset = value <= (4 / nrow(train_data)))
+
+model_new_int =  lm(median_house_value ~ .^2, data = train_data, subset = value <= (4 / nrow(train_data)))
+
+model_new_add_AIC = step(model_new_add, direction = "backward", trace = 0)
+
+model_new_int_AIC = step(model_new_int, direction = "backward", trace = 0)
+
+```
+
+```{r}
+
+Result = data.frame(
+        "Additive Model" =c("LOOCV" = sqrt(mean((resid(model_new_add) / (1 - hatvalues(model_new_add))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_add)$adj.r.squared,
+              "RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_add, newdata = test_data))^2))),
+        
+        "Interaction Model" = c( "LOOCV" = sqrt(mean((resid(model_new_int) / (1 - hatvalues(model_new_int))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_int)$adj.r.squared,
+              "RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_int, newdata = test_data))^2))),
+        
+        "Additive Model AIC" = c( "LOOCV" = sqrt(mean((resid(model_new_add_AIC) / (1 - hatvalues(model_new_add_AIC))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_add_AIC)$adj.r.squared,
+              "RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_add_AIC, newdata = test_data))^2))),
+        
+        "Interection Model AIC" = c( "LOOCV" = sqrt(mean((resid(model_new_int_AIC) / (1 - hatvalues(model_new_int_AIC))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_int_AIC)$adj.r.squared,
+              "RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_int_AIC, newdata = test_data))^2)))
+        
+)
+
+ kable(t(Result))
+
+```
+
+
+```{r}
+summary(model_new_int_AIC)
+
+```
+
+
+As shown above table, our selected model "model_new_int_AIC" has lowest LOOCV RMSE in all models i.e 49773.83 and better Adjusted R squared around 78.5%. We have an average Standard Error 48880 that means on average, our model’s predicted housing price will be ± 48880 in comparison to the actual price. 
+
+Above table also shows Model performance on Test Data. "Test RMSE" columns shows root squared error in Test Data and "model_new_int_AIC" showed lowest RMSE in all i.e. 64266.58.
+
+
+We believe this error isn’t too bad considering that the majority of the predictors were based on location. As location and more specifically ocean_proximity - gives us quite a lot of information about housing prices, but it does’t tell the whole story.
+
+Below we show the range of our model’s error by ocean_proximity (Note that there is not data for the ISLAND level because we removed it from the dataset to avoid skew because of its low representation):
+
+
+```{r}
+prediction = predict(model_new_int_AIC, newdata = test_data)
+op0 = par()
+op1 = op0$mar
+op1[2] = 7
+par(mar = op1)
+plot(prediction - test_data$median_house_value, test_data$ocean_proximity,
+     xlab = "Predicted Price Over / Under Actual Price",
+     ylab = "",
+     main = "Predicted Price Over / Under Actual Price vs Ocean Proximity",
+     col = "dodgerblue", yaxt = "none")
+axis(2, at = 1:5, labels = levels(test_data$ocean_proximity), las = 1)
+```
+
+
+```{r}
+plot_map = ggplot(test_data, 
+                  aes(x = longitude, y = latitude, 
+                      color = prediction - test_data$median_house_value, 
+                      hma = housing_median_age, tr = total_rooms, tb = total_bedrooms,
+                      hh = households, mi = median_income)) +
+              geom_point(aes(size = abs(prediction - test_data$median_house_value)), alpha = 0.4) +
+              xlab("Longitude") +
+              ylab("Latitude") +
+              ggtitle("Predicted Price Over / Under Actual Price") +
+              theme(plot.title = element_text(hjust = 0.5)) +
+              scale_color_distiller(palette = "Paired", labels = comma) +
+              labs(color = "Predicted Price Over / Under (in $USD)", 
+                   size = "Magnitude of Price Difference")
+plot_map
+```
+
+
+
+```
+

@@ -1,0 +1,88 @@
+---
+title: "STAT 420: Data Analysis Project"
+date: '07/19/2020'
+author:
+- "Amandeep,Kumar Gaurav and Vishal"
+output: 
+  html_document:
+    toc: yes
+  pdf_document: default
+urlcolor: cyan
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+```
+
+
+## Team
+
+Name             | NetID
+---------------- | -------------
+Amandeep Takhar  | atakhar2
+Kumar Gaurav     | Kgdubey2
+Vishal Agarwal   | vishala2
+
+
+## Tentative Title
+**Housing Price Prediction**
+<br/>
+\newline
+<span style="color: blue;">An analysis on factors contributing to determine housing price in 
+California</span>
+ 
+ 
+## Dataset
+ 
+#### Background
+
+This dataset comes from Kaggle, The data contains information from the 1990 California census. The dataset contains 20640 records and 9 predictors.
+<br/>
+We will also try to find a dataset from some other location and it will be interesting to analyze if the results change by geographical location
+<br/>
+[Source Dataset](https://www.kaggle.com/camnugent/california-housing-prices)
+
+
+
+#### Description
+ 
+```{r, echo=FALSE}
+library(knitr)
+variables = c("longitude",
+              "latitude", 
+              "housingmedianage",
+              "total_rooms",
+              "total_bedrooms",
+              "population",
+              "households",
+              "median_income",
+              "ocean_proximity", 
+             "medianhousevalue")
+types = rep("numerical", length(variables))
+types[1] = "numerical(response)"
+
+description = c('longitude cordinates', 'latitude cordinates', 'median Age of the house', 'total_rooms', 'total_bedrooms', 'population of the area', 'households in the area', 'median income', 'ocean_proximity(Near Bay/Inland)', 'median house value-Target  variable')
+kable(data.frame(Variables=variables, Type=types,  Description=description))
+```
+
+## Personal interest
+
+This can be helpful for the immigrants like us, who lack proper knowledge about the real state pricing while buying home in one of the most expensive location in the world like California.
+
+
+Equipped with the knowledge gained over the semester, we feel well prepared in order to understand statistical models and analyze the impact of 7 predictors on the housing price and also  predict the price of house in any society given the predictors.We plan to  exclude Latitude and longitude for simplicity.
+
+<span style="color: blue;">Personally, we would like to explore correlation between given variables like total bedroom ,population ,ocean proximity etc in determining the price of a house.We would also like to divide the dataset into test and train and see the error in prediction</span>
+
+
+## Evidence of the Data
+
+Included below is how the data from source Kaggle, The source format was csv and can be read into R. Below is the sample records from the source file.
+
+
+
+```{r kable}
+library(readr)
+housing <- read.csv("housing.csv")
+knitr::kable(head(housing)[,1:10])
+```

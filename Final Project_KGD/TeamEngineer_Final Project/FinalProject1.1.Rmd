@@ -1,0 +1,413 @@
+---
+title: 'STAT 420: Data Analysis Project'
+author: "Amandeep,Kumar Gaurav and Vishal"
+date: "08/03/2020"
+output:
+  word_document:
+    toc: yes
+  html_document:
+    toc: yes
+  pdf_document: default
+urlcolor: cyanx`
+---
+
+## Team Engineers
+
+Name             | NetID
+---------------- | -------------
+Amandeep Takhar  | atakhar2
+Kumar Gaurav     | Kgdubey2
+Vishal Agarwal   | vishala2
+
+## Introduction
+Title - **California Housing Price Prediction**
+<br/>
+<span style="color: blue;">An analysis on factors contributing to determine housing price in 
+California</span>
+
+### Dataset background
+The data pertains to the houses found in a given California district and some summary stats about them based on the 1990 census data.The dataset contains 20640 records and 9 predictors.
+Our goal is to  explore correlation between given variables like total bedroom ,population ,ocean proximity etc in determining the price of housing in a given area.In the process we would also like to divide the dataset into test and train and test the behavior of our model.
+
+[Source Dataset](https://www.kaggle.com/camnugent/california-housing-prices)
+
+
+
+```{r setup, include=FALSE}
+library(readr)
+library(ggplot2)
+library(knitr)
+library(caret)
+library(leaps)
+library(scales)
+library(RColorBrewer)
+library(lmtest)
+library(ggmap)
+library(usmap)
+
+```
+
+Reading  data
+
+```{r cars}
+data = read.csv("housing.csv")
+```
+
+
+```{r}
+head(data, 10)
+str(data)
+```
+
+
+
+### Description about the variables
+<br/>
+1. longitude: A measure of how far west a house is; a higher value is farther west
+<br/>
+2. latitude: A measure of how far north a house is; a higher value is farther north
+<br/>
+3. housingMedianAge: Median age of a house within a block; a lower number is a newer building
+<br/>
+4. totalRooms: Total number of rooms within a block
+<br/>
+5. totalBedrooms: Total number of bedrooms within a block
+<br/>
+6. population: Total number of people residing within a block
+<br/>
+7. households: Total number of households, a group of people residing within a home unit, for a block
+<br/>
+8. medianIncome: Median income for households within a block of houses (measured in tens of thousands of US Dollars)
+<br/>
+<span style="color: red;">9. medianHouseValue: Median house value for households within a block (USD Response variable) </span>
+<br/>
+10. oceanProximity: Location of the house w.r.t ocean/sea
+
+## Method
+
+### Missing Data
+As a first step in data quality , we will look for missing data.
+```{r}
+sum(is.na(data))
+```
+
+We see 207 missing values, which we plan to remove in the below step.
+
+```{r}
+data = na.omit(data)
+str(data)
+```
+
+
+### Categorical Variables
+On taking an in depth look at each variable, we decided  to make ocean_proximity as a categorical variable, we can see below that it is broadly classified  into 5 values.
+
+```{r}
+is.factor(data$ocean_proximity)
+data$ocean_proximity = as.factor(data$ocean_proximity)
+levels(data$ocean_proximity)
+```
+
+
+
+```{r}
+barplot(table(data$ocean_proximity), main="Distribution of ocean_proximity",
+          xlab="ocean_proximity",
+          ylab="Count",
+          border="red",
+          col="blue",
+          density=10)
+
+```
+
+The distribution depicts that "island" has the least count  and "1H OCEAN" has the maximum count. This data also make practical sense.
+
+```{r}
+pairs(data, col = "dodgerblue")
+```
+```{r}
+kable(t(cor(data[,-10])))
+```
+
+**We noticed there is collinearity between <span style="color: blue;">(households and total_bedrooms) & (households and total_rooms)</span>. We will keep this in mind and explore the data further** 
+
+### Training and Test Data
+We took 80% of the data as training data and used seed to be consistent with the results.
+
+```{r}
+set.seed(100)
+totalnrows = nrow(data)
+
+x = sample(totalnrows, floor(totalnrows * .80) )
+train_data = data[x, ]
+test_data = data[-x, ]
+```
+
+
+```{r}
+plot_map = ggplot(train_data, 
+                  aes(x = longitude, y = latitude, color = median_house_value, 
+                      hma = housing_median_age, tr = total_rooms, tb = total_bedrooms,
+                      hh = households, mi = median_income)) +
+              geom_point(aes(size = population), alpha = 0.4) +
+              xlab("Longitude") +
+              ylab("Latitude") +
+              ggtitle("Data Map - Longtitude vs Latitude and Associated Variables") +
+              theme(plot.title = element_text(hjust = 0.5)) +
+              scale_color_distiller(palette = "Paired", labels = comma) +
+              labs(color = "Median House Value (in $USD)", size = "Population")
+plot_map
+
+```
+
+The graph above shows distribution of Median house value based on population and Latitude.
+It gives us fair distribution of values across geographical area.
+
+<span style="color: blue;">Additive Model</span>
+```{r}
+#Training additive Model
+model_add = lm(median_house_value ~ ., data = train_data)
+summary(model_add)
+summary(model_add)$adj.r.squared
+
+```
+
+**By analyzing p-value of all Beta variable in Additive model, we can say that we fail to reject that Null Hypothesis that Beta value of any variable is Zero. Hence all variables are  playing important role in prediction of House Median Income. And Adjusted R squared value of Model is 64.6%**
+
+<span style="color: blue;">Interaction Model</span>
+```{r}
+
+model_int = lm(median_house_value ~ . ^ 2, data = train_data)
+summary(model_int)$adj.r.squared
+```
+
+**In interaction model we can see an increment of Model performance by Adjusted R Squared which is 70.3%**
+
+<span style="color: blue;"> Testing Interaction model with respect to Additive Model</span>
+
+```{r}
+
+anova(model_int, model_add)
+```
+
+**P-value of test is 2.2e-16  which is very less hence we can consider Interactive models is better than additive model**
+
+
+### Model Improvement Using AIC and BIC
+
+```{r}
+
+model_add_aic = step(model_add, direction = "backward", trace = 0)
+summary(model_add_aic)$adj.r.squared
+
+model_add_bic = step(model_add, direction = "backward", trace = 0, k = log(nrow(train_data)))
+summary(model_add_bic)$adj.r.squared
+
+model_int_aic = step(model_int, direction = "backward", trace = 0)
+summary(model_int_aic)$adj.r.squared
+
+model_int_bic = step(model_int, direction = "backward", trace = 0, k = log(nrow(train_data)))
+summary(model_int_bic)$adj.r.squared
+
+
+```
+
+```{r}
+beginning_mods_results = data.frame(
+  "Total Predictors" =
+    c("Additive Model" = extractAIC(model_add)[1],
+      "Interaction Model" = extractAIC(model_int)[1],
+      "AIC_additive Model" = extractAIC(model_add_aic)[1],
+      "AIC_Int Model" = extractAIC(model_int_aic)[1],
+      "BIC_additive Model" = extractAIC(model_add_bic)[1],
+      "BIC_Int Model" = extractAIC(model_int_bic)[1]),
+  "AIC" =
+    c("Additive Model" = extractAIC(model_add)[2],
+       "Interaction Model" = extractAIC(model_int)[2],
+      "AIC_additive Model" = extractAIC(model_add_aic)[2],
+      "AIC_Int Model" = extractAIC(model_int_aic)[2],
+       "BIC_additive Model" = extractAIC(model_add_bic)[2],
+      "BIC_Int Model" = extractAIC(model_int_bic)[2]),
+  "Adj R-Squared" =
+    c("Additive Model" = summary(model_add)$adj.r.squared,
+      "Interaction Model" = summary(model_int)$adj.r.squared,
+      "AIC_additive Model" =summary(model_add_aic)$adj.r.squared,
+      "AIC_Int Model" = summary(model_int_aic)$adj.r.squared,
+       "BIC_additive Model" =summary((model_add_bic))$adj.r.squared,
+      "BIC_Int Model" = summary(model_int_bic)$adj.r.squared))
+
+kable(beginning_mods_results, align = c("c", "r"))
+```
+
+**We see that the model with the best (i.e., lowest) AIC is Interaction Model, with a score of 361268.2. But we will work further to enhance performance of model.**
+
+
+
+```{r}
+diagnostics = function(model, alpha = .05, pointcol = "orange", linecol = "blue", plots = TRUE, tests = TRUE, pointtype = 16) {
+    if (plots == TRUE) {
+        par(mfrow = c(1, 3))
+        plot(
+                fitted(model),
+                resid(model),
+                pch = pointtype,
+                xlab = "Fitted Values",
+                ylab = "Residuals",
+                main = "Fitted vs Residuals",
+                col = pointcol
+            )
+        abline(h = 0, lwd = 2, col = linecol)
+        
+        qqnorm(
+                resid(model),
+                pch = pointtype,
+                main = "QQNorm Plot",
+                col = pointcol
+            )
+        qqline(
+                resid(model),
+                lwd = 2,
+                col = linecol
+                )
+        hist(
+            resid(model),
+            main = "Histogram of Residuals",
+            col = pointcol,
+            xlab = "Residuals",
+            ylab = "Frequency"
+            )
+    }
+    if (tests == TRUE) {
+        ks_test = ks.test(resid(model),y='pnorm',alternative='two.sided')
+        bp_test = bptest(model)
+        test_results = data.frame(
+          "Kolmogorov-Smirnov  Test" =
+            c("Test Statistic" = round(ks_test$statistic, 5),
+              "P-Value" = ks_test$p.value,
+              "Result" = ifelse(ks_test$p.value < alpha, "Reject", "Fail To Reject")),
+          "Breusch-Pagan Test" =
+            c("Test Statistic" = round(bp_test$statistic, 5),
+              "P-Value" = bp_test$p.value,
+              "Result" = ifelse(bp_test$p.value < alpha, "Reject", "Fail To Reject")))
+
+        kable(t(test_results), col.names = c("Test Statistic", "P-Value", "Decision"))
+    }
+}
+```
+
+```{r}
+diagnostics(model_add)
+diagnostics(model_int)
+diagnostics(model_add_aic)
+diagnostics(model_add_bic)
+diagnostics(model_int_aic)
+diagnostics(model_int_bic)
+
+
+```
+
+
+```{r}
+x = ks.test(x=rnorm(10^4),y='pnorm',alternative='two.sided')
+
+x$p.value
+```
+
+We can see that all above models do not have Equal variance and residual in Normal form. Hence we need to improve model.
+
+Kolmogorov–Smirnov test-
+In statistics, the Kolmogorov–Smirnov test is a nonparametric test of the equality of continuous, one-dimensional probability distributions that can be used to compare a sample with a reference probability distribution, or to compare two samples.
+<br/>
+Note- We tried using shapiro.test first, but the test that did not work considering the size of the dataset.
+
+### Model Improvement
+
+Now, we will calculate the cooks distance and will remove outliers and high influential values.
+
+```{r}
+value = cooks.distance(model_add)
+sum(value > 4 / length(resid(model_add)))
+
+model_new_add =  lm(median_house_value ~ ., data = train_data, subset = value <= (4 / nrow(train_data)))
+
+model_new_int =  lm(median_house_value ~ .^2, data = train_data, subset = value <= (4 / nrow(train_data)))
+
+model_new_add_AIC = step(model_new_add, direction = "backward", trace = 0)
+
+model_new_int_AIC = step(model_new_int, direction = "backward", trace = 0)
+
+```
+
+Based on the new data data values, we will again train the models and calculate ADJ R Squared and LOOCV values (Leave-One-Out Cross-Validation)
+
+
+## Results
+
+When we initially calculated the AdjustedR2 value the results were not very convincing as we had low  ADJ R Squared value for all the models.
+However,when we remove the outliers and high influential values using the cooks distance we got better results. 
+
+```{r}
+
+Result = data.frame(
+        "Additive Model" =c("LOOCV" = sqrt(mean((resid(model_new_add) / (1 - hatvalues(model_new_add))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_add)$adj.r.squared,
+              "Test RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_add, newdata = test_data))^2)),
+               "SE" = summary(model_new_add)$sigma),
+        
+        "Interaction Model" = c( "LOOCV" = sqrt(mean((resid(model_new_int) / (1 - hatvalues(model_new_int))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_int)$adj.r.squared,
+              "Test RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_int, newdata = test_data))^2)),
+              "SE" = summary(model_new_int)$sigma),
+        
+        "Additive Model AIC" = c( "LOOCV" = sqrt(mean((resid(model_new_add_AIC) / (1 - hatvalues(model_new_add_AIC))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_add_AIC)$adj.r.squared,
+              "Test RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_add_AIC, newdata = test_data))^2)),
+              "SE" = summary(model_new_add_AIC)$sigma),
+        
+        "Interaction Model AIC" = c( "LOOCV" = sqrt(mean((resid(model_new_int_AIC) / (1 - hatvalues(model_new_int_AIC))) ^ 2)),
+              "ADJ R Squared" = summary(model_new_int_AIC)$adj.r.squared,
+              "Test RMSE" = sqrt(mean((test_data$median_house_value - predict(model_new_int_AIC, newdata = test_data))^2)),
+              "SE" = summary(model_new_int_AIC)$sigma)
+        
+)
+
+ kable(t(Result))
+
+```
+
+Based on the results, we can say that Interaction.Model.AIC is having better ADJ R Squared(0.7847864) among all model and hence can be considered best among the given model.
+Also, this is also better than the previous all models discussed( without removal of outliers")  where the max adjusted R2 value was 0.7025212 for "AIC_Int Model"
+
+## Discussion
+
+As shown above table, our selected model "model_new_int_AIC" (AIC of Interaction Model) has lowest LOOCV RMSE in all models i.e 49773.83 and better Adjusted R squared around 78.5%. We have an average Standard Error 48882.21 that means on average, our model’s predicted housing price will be ± 48882.21 in comparison to the actual price. 
+
+Above table also shows Model performance on Test Data. "Test RMSE" columns shows root squared error for Test Data and "model_new_int_AIC" showed lowest RMSE in all i.e. 64266.58.
+
+Our aim was to predict Housing price for California Region and based on above observation we can conclude that No individual predictor determines the cost of the house however interaction of predictor make up better prediction model.
+
+## Appendix
+
+- Names of Team : Team Engineer
+- Original Data : 
+```{r}
+head(data, 5)
+```
+
+- Outlier and high influence points removal by Cook's Distance
+
+- Best Model 
+
+```{r}
+summary(model_new_int_AIC)
+```
+
+
+
+
+
+
+
+
+
+

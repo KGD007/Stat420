@@ -1,0 +1,508 @@
+---
+title: "Week 3 - Homework"
+author: "STAT 420, Summer 2020, D. Unger"
+date: ''
+output:
+  html_document: 
+    theme: readable
+    toc: yes  
+  pdf_document: default
+urlcolor: cyan
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## Exercise 1 (Using `lm` for Inference)
+
+For this exercise we will use the `cats` dataset from the `MASS` package. You should use `?cats` to learn about the background of this dataset.
+
+**(a)** Fit the following simple linear regression model in `R`. Use heart weight as the response and body weight as the predictor. 
+
+\[
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i
+\]
+
+Store the results in a variable called `cat_model`. Use a $t$ test to test the significance of the regression. Report the following:
+
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.05$
+- A conclusion in the context of the problem
+
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+cats = MASS :: cats
+cat_model = lm(Hwt ~ Bwt, data = cats)
+summary(cat_model)
+
+```
+
+```{r}
+test_statistic = summary(cat_model)$coefficients[2,3]
+test_statistic
+```
+
+```{r}
+p_value = summary(cat_model)$coefficients[2,4]
+p_value
+```
+- $H_0 : \beta_1 = 0$
+- $H_1 : \beta_1 \neq 0$ 
+- Test_statistic : 16.11939
+- p_value : 6.969045e-34
+- Reject $H_0$ at $\alpha = 0.05$
+- Conclusion: Linear relationship between Cat Weight and Cat Heart weight.
+
+
+**(b)** Calculate a 95% confidence interval for $\beta_1$. Give an interpretation of the interval in the context of the problem.
+
+```{r}
+confint(cat_model, parm = "Bwt", level = .95)
+
+```
+
+**Interpretation - We are 95% confident that given a 1 KG increase in body weight, the average increase in Heart weight will be between 3.539343 and 4.528782 gram.**
+
+**(c)** Calculate a 90% confidence interval for $\beta_0$. Give an interpretation of the interval in the context of the problem.
+```{r}
+confint(cat_model, parm = "(Intercept)", level = .90)
+```
+**Interpretation - Though it does not look realistic however mathematically, we are 90% confident that for zero KG body weight, the average Heart Weight will be between -1.502834 and 0.7895096 gram.**
+
+**(d)** Use a 90% confidence interval to estimate the mean heart weight for body weights of 2.1 and 2.8 kilograms. Which of the two intervals is wider? Why?
+
+```{r}
+predict(cat_model, newdata = data.frame(Bwt = c(2.1, 2.8)), level = .90, interval = c("confidence"))
+```
+```{r}
+mean(cats$Bwt)
+range(cats$Bwt)
+```
+
+- **Predicted 90% Confidence interval for Bwt 2.1 is (7.787882,  8.441856)** 
+- **Predicted 90% Confidence interval for Bwt 2.8 is (10.735843, 11.141583)**
+
+```{r}
+- 7.787882 +  8.441856
+- 10.735843 + 11.141583
+
+```
+
+
+**Interval for 2.1 is larger because though both value 2.1 and 2.8 lies in interpolation range still 2.1 is far from mean of predictor **
+
+**(e)** Use a 90% prediction interval to predict the heart weight for body weights of 2.8 and 4.2 kilograms.
+```{r}
+predict(cat_model, newdata = data.frame(Bwt = c(2.8, 4.2)), level = .90, interval = c("prediction"))
+```
+- **90% rediction interval to for heart weight when body weights (2.8) is (8.525541, 13.35189)**
+- **90% rediction interval to for heart weight when body weights (4.2) is (14.097100, 19.07570)**
+
+**(f)** Create a scatterplot of the data. Add the regression line, 95% confidence bands, and 95% prediction bands.
+
+```{r}
+predict_conf = predict(cat_model,level = .95, interval = c("confidence") )
+predict_pred = predict(cat_model,level = .95, interval = c("prediction") )
+plot(Hwt ~ Bwt, data = cats,
+    xlab = "Body Weight (in kg)",
+    ylab = "Heart Weight (in g)",
+    main = "Cat Body Weight vs heart Weight",
+    pch  = 20,
+    cex  = 2,
+    col  = "grey"
+    )
+abline(cat_model, lwd = 5, col = "darkorange");
+lines(cats$Bwt, predict_conf[,"lwr"], col = "dodgerblue", lwd = 3, lty = 2)
+lines(cats$Bwt, predict_conf[,"upr"], col = "dodgerblue", lwd = 3, lty = 2)
+lines(cats$Bwt, predict_pred[,"lwr"], col = "green", lwd = 3, lty = 3)
+lines(cats$Bwt, predict_pred[,"upr"], col = "green", lwd = 3, lty = 3)
+
+legend("topright", legend = c("Estimate", "Confidence" , "Prediction"), lty = c(1, 2,3), lwd = 2,
+       col = c("darkorange", "dodgerblue", "green"))
+
+```
+
+
+**(g)** Use a $t$ test to test:
+
+- $H_0: \beta_1 = 4$
+- $H_1: \beta_1 \neq 4$
+
+Report the following:
+
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.05$
+
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+summary(cat_model)
+standerd_error = summary(cat_model)$coefficients[2,2]
+test_statistic = (summary(cat_model)$coefficients[2,1] - 4) / standerd_error
+p_value = 1 - pt(test_statistic, df = length(cats$Bwt)-2)
+p_value
+
+```
+
+- The value of the test statistic : *0.1361084*
+- The p-value of the test : *0.4459642*
+- Decision: *p-value is far greater than $\alpha$. So we fail to reject $H_0$  *
+***
+
+## Exercise 2 (More `lm` for Inference)
+
+For this exercise we will use the `Ozone` dataset from the `mlbench` package. You should use `?Ozone` to learn about the background of this dataset. You may need to install the `mlbench` package. If you do so, do not include code to install the package in your `R` Markdown document.
+
+For simplicity, we will re-perform the data cleaning done in the previous homework.
+
+```{r}
+data(Ozone, package = "mlbench")
+Ozone = Ozone[, c(4, 6, 7, 8)]
+colnames(Ozone) = c("ozone", "wind", "humidity", "temp")
+Ozone = Ozone[complete.cases(Ozone), ]
+```
+
+
+**(a)** Fit the following simple linear regression model in `R`. Use the ozone measurement as the response and wind speed as the predictor. 
+
+\[
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i
+\]
+
+Store the results in a variable called `ozone_wind_model`. Use a $t$ test to test the significance of the regression. Report the following:
+
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.01$
+- A conclusion in the context of the problem
+
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+
+```{r}
+ozone_wind_model = lm(ozone ~ wind, data = Ozone)
+summary(ozone_wind_model)
+Test_statistic = summary(ozone_wind_model)$coefficients[2,3]
+p_value = summary(ozone_wind_model)$coefficients[2,4]
+
+```
+
+- $H_0 : \beta_1 = 0$
+- $H_1 : \beta_1 \neq 0$ 
+- Test_statistic : -0.2189811
+- p_value : 0.8267954
+- Fail to reject $H_0$ at $\alpha = 0.01$
+- Conclusion: p-value is far greater than $\alpha$ So we fail to reject $H_0$. There is no linear relationship between ozone and wind.
+
+**(b)** Fit the following simple linear regression model in `R`. Use the ozone measurement as the response and temperature as the predictor. 
+
+\[
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i
+\]
+
+Store the results in a variable called `ozone_temp_model`. Use a $t$ test to test the significance of the regression. Report the following:
+
+- The null and alternative hypotheses
+- The value of the test statistic
+- The p-value of the test
+- A statistical decision at $\alpha = 0.01$
+- A conclusion in the context of the problem
+
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+ozone_temp_model = lm(ozone ~ temp, data = Ozone)
+summary(ozone_temp_model)
+Test_statistic = summary(ozone_temp_model)$coefficients[2,3]
+p_value = summary(ozone_temp_model)$coefficients[2,4]
+
+```
+
+- $H_0 : \beta_1 = 0$
+- $H_1 : \beta_1 \neq 0$ 
+- Test_statistic : 22.84896
+- p_value : 8.153764e-71
+- Reject $H_0$ at $\alpha = 0.01$
+- Conclusion: Linear relationship between ozone and temp
+
+***
+
+## Exercise 3 (Simulating Sampling Distributions)
+
+For this exercise we will simulate data from the following model:
+
+\[
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i
+\]
+
+Where $\epsilon_i \sim N(0, \sigma^2).$ Also, the parameters are known to be:
+
+- $\beta_0 = -5$
+- $\beta_1 = 3.25$
+- $\sigma^2 = 16$
+
+We will use samples of size $n = 50$.
+
+**(a)** Simulate this model $2000$ times. Each time use `lm()` to fit a simple linear regression model, then store the value of $\hat{\beta}_0$ and $\hat{\beta}_1$. Set a seed using **your** birthday before performing the simulation. Note, we are simulating the $x$ values once, and then they remain fixed for the remainder of the exercise.
+
+```{r}
+birthday = 19890101
+set.seed(birthday)
+n = 50
+x = seq(0, 10, length = n)
+```
+
+```{r}
+beta_0_hat = rep(0, 2000)
+beta_1_hat = rep(0, 2000)
+sigma = sqrt(16)
+beta_0 = -5
+beta_1 = 3.25
+
+for (i in 1:2000)
+{
+  error = rnorm(n , mean= 0, sd =sigma )
+  y = beta_0 + beta_1 * x + error
+  model = lm(y ~ x)
+  beta_0_hat[i] = coef(model)[1]
+  beta_1_hat[i] = coef(model)[2]
+}
+
+```
+
+
+**(b)** Create a table that summarizes the results of the simulations. The table should have two columns, one for $\hat{\beta}_0$ and one for $\hat{\beta}_1$. The table should have four rows:
+
+- A row for the true expected value given the known values of $x$
+- A row for the mean of the simulated values
+- A row for the true standard deviation given the known values of $x$
+- A row for the standard deviation of the simulated values
+
+
+
+```{r}
+Sxx = sum((x - mean(x)) ^ 2)
+var_beta_1_hat = (sigma ^ 2) / Sxx
+var_beta_0_hat = sigma ^ 2 * ((1 / length(x))  + ((mean(x) ^ 2) / Sxx))
+
+example_data = rbind(true_expected_value = c( -5 , 3.25),
+                  mean_vale = c(mean(beta_0_hat), mean(beta_1_hat)))
+example_data= rbind(example_data, true_std = c(sqrt(var_beta_0_hat), sqrt(var_beta_1_hat)))
+
+example_data= rbind(example_data, simulated_std = c(sd(beta_0_hat), sd(beta_1_hat)))
+colnames(example_data) =  c("BETA_0", "BETA_1")
+example_data
+```
+
+
+**(c)** Plot two histograms side-by-side:
+
+- A histogram of your simulated values for $\hat{\beta}_0$. Add the normal curve for the true sampling distribution of $\hat{\beta}_0$.
+- A histogram of your simulated values for $\hat{\beta}_1$. Add the normal curve for the true sampling distribution of $\hat{\beta}_1$.
+
+```{r}
+
+par(mfrow=c(1,2))
+hist(beta_1_hat, prob = TRUE, breaks = 20, 
+     xlab = expression(hat(beta)[1]), main = "", border = "dodgerblue")
+curve(dnorm(x, mean = beta_1, sd = sqrt(var_beta_1_hat)), 
+      col = "darkorange", add = TRUE, lwd = 3)
+
+hist(beta_0_hat, prob = TRUE, breaks = 20, 
+     xlab = expression(hat(beta)[0]), main = "", border = "dodgerblue")
+curve(dnorm(x, mean = beta_0, sd = sqrt(var_beta_0_hat)), 
+      col = "darkorange", add = TRUE, lwd = 3)
+
+```
+
+***
+
+## Exercise 4 (Simulating Confidence Intervals)
+
+For this exercise we will simulate data from the following model:
+
+\[
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i
+\]
+
+Where $\epsilon_i \sim N(0, \sigma^2).$ Also, the parameters are known to be:
+
+- $\beta_0 = 5$
+- $\beta_1 = 2$
+- $\sigma^2 = 9$
+
+We will use samples of size $n = 25$.
+
+Our goal here is to use simulation to verify that the confidence intervals really do have their stated confidence level. Do **not** use the `confint()` function for this entire exercise.
+
+**(a)** Simulate this model $2500$ times. Each time use `lm()` to fit a simple linear regression model, then store the value of $\hat{\beta}_1$ and $s_e$. Set a seed using **your** birthday before performing the simulation. Note, we are simulating the $x$ values once, and then they remain fixed for the remainder of the exercise.
+
+```{r}
+birthday = 19890101
+set.seed(birthday)
+n = 25
+x = seq(0, 2.5, length = n)
+```
+
+```{r}
+beta_0 = 5
+beta_1 = 2
+sigma = 3
+beta_1_hat = rep(0, 2500)
+se = rep(0, 2500)
+
+for (i in 1:2500)
+{
+  
+  error = rnorm(n, mean = 0 , sd = sigma)
+  y = beta_0 + beta_1 * x + error
+  model = lm(y~x)
+  beta_1_hat[i]= coef(model)[2]
+  se[i] = summary(model)$sigma 
+} 
+  
+```
+
+
+**(b)** For each of the $\hat{\beta}_1$ that you simulated, calculate a 95% confidence interval. Store the lower limits in a vector `lower_95` and the upper limits in a vector `upper_95`. Some hints:
+
+- You will need to use `qt()` to calculate the critical value, which will be the same for each interval.
+- Remember that `x` is fixed, so $S_{xx}$ will be the same for each interval.
+- You could, but do not need to write a `for` loop. Remember vectorized operations.
+
+```{r}
+alpha = 0.05
+crit = qt(0.975, df = n - 2)
+Sxx = sum((x - mean(x)) ^ 2)
+lower_95 = beta_1_hat - crit * sqrt( (se ^ 2)/ Sxx )
+upper_95 = beta_1_hat + crit * sqrt( (se ^ 2)/ Sxx )
+```
+
+
+**(c)** What proportion of these intervals contains the true value of $\beta_1$?
+
+```{r}
+mean(lower_95 < beta_1 & beta_1 < upper_95)
+
+```
+
+**95.28% interval have $\beta_1$** 
+
+**(d)** Based on these intervals, what proportion of the simulations would reject the test $H_0: \beta_1 = 0$ vs $H_1: \beta_1 \neq 0$ at $\alpha = 0.05$?
+
+```{r}
+
+1- mean(lower_95 < 0 & 0 < upper_95)
+
+```
+
+**Based on above interval 66.36% would reject the test**
+
+**(e)** For each of the $\hat{\beta}_1$ that you simulated, calculate a 99% confidence interval. Store the lower limits in a vector `lower_99` and the upper limits in a vector `upper_99`.
+
+```{r}
+
+alpha = 0.01
+crit = qt(0.995, df = n - 2)
+lower_99 = beta_1_hat - crit *  sqrt( (se ^ 2)/ Sxx )
+upper_99 = beta_1_hat + crit * sqrt( (se ^ 2)/ Sxx )
+
+```
+
+
+**(f)** What proportion of these intervals contains the true value of $\beta_1$?
+
+```{r}
+mean(lower_99 <= 2 & 2 <=  upper_99)
+
+```
+
+**99.04% interval have $\beta_1$** 
+
+**(g)** Based on these intervals, what proportion of the simulations would reject the test $H_0: \beta_1 = 0$ vs $H_1: \beta_1 \neq 0$ at $\alpha = 0.01$?
+
+```{r}
+1 -  mean(lower_99 < 0 & 0 <  upper_99)
+```
+
+**39.96% intervals will reject the test ** 
+
+***
+
+## Exercise 5 (Prediction Intervals "without" `predict`)
+
+Write a function named `calc_pred_int` that performs calculates prediction intervals:
+
+$$
+\hat{y}(x) \pm t_{\alpha/2, n - 2} \cdot s_e\sqrt{1 + \frac{1}{n}+\frac{(x-\bar{x})^2}{S_{xx}}}.
+$$
+
+for the linear model
+
+$$
+Y_i = \beta_0 + \beta_1 x_i + \epsilon_i.
+$$
+
+**(a)** Write this function. You may use the `predict()` function, but you may **not** supply a value for the `level` argument of `predict()`. (You can certainly use `predict()` any way you would like in order to check your work.)
+
+The function should take three inputs:
+
+- `model`, a model object that is the result of fitting the SLR model with `lm()`
+- `newdata`, a data frame with a single observation (row)
+    - This data frame will need to have a variable (column) with the same name as the data used to fit `model`.
+- `level`, the level (0.90, 0.95, etc) for the interval with a default value of `0.95`
+
+The function should return a named vector with three elements:
+
+- `estimate`, the midpoint of the interval
+- `lower`, the lower bound of the interval
+- `upper`, the upper bound of the interval
+
+```{r}
+cat_model = lm(Hwt ~ Bwt, data = cats)
+
+  calc_pred_int = function(model,  newdata, level = 0.95)  
+  {
+beta_0 = coef(model)[1]
+beta_1 = coef(model)[2]
+x = as.vector(model$model[,2])
+y = as.vector(model$model[,1])
+y_hat = beta_0 + beta_1 * x
+x_bar = mean(x)
+Sxx = sum((x - x_bar)^2)
+
+Se = sqrt( sum((y - y_hat) ^ 2) / (length(x) -2))
+alpha = (1 - level) / 2
+crit = qt(level + alpha, df = length(x) -1)
+se_interval = Se * sqrt(1 + ( 1/length(x) )  + ( (newdata[[1]] - x_bar)^2 / Sxx ) )
+estimate = beta_0 + beta_1 * newdata[[1]]
+lower = estimate - se_interval * crit
+Upper = estimate + se_interval * crit
+data.frame("estimate" = estimate, "lower" = lower, "upper" =Upper)
+}
+```
+
+
+**(b)** After writing the function, run this code:
+
+```{r, eval = FALSE}
+newcat_1 = data.frame(Bwt = 4.0)
+calc_pred_int(cat_model, newcat_1)
+```
+
+**estimate = 15.77959,    lower = 12.83036    upper = 18.72882** 
+                                       
+
+**(c)** After writing the function, run this code:
+
+```{r, eval = FALSE}
+newcat_2 = data.frame(Bwt = 3.3)
+calc_pred_int(cat_model, newcat_2, level = 0.90)
+```
+
+**estimate = 12.95574,    lower = 10.5311    upper = 15.38039** 

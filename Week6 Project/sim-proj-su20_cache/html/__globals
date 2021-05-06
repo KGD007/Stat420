@@ -1,0 +1,13 @@
+unnamed-chunk-1	set.seed
+unnamed-chunk-2	$	$<-	~	c	data.frame	lm	nrow	pf	rep	rnorm	summary
+unnamed-chunk-3	[<-	beta_0	beta_1	beta_2	beta_3	beta_insig_0	beta_insig_1	beta_insig_2	beta_insig_3	for	read.csv	simulation
+unnamed-chunk-4	$	c	curve	df	F_value_insigni	F_value_signi	hist	par
+unnamed-chunk-5	$	c	curve	df	F_value_insigni	F_value_signi	hist	par
+unnamed-chunk-6	$	c	curve	df	F_value_insigni	F_value_signi	hist	par
+unnamed-chunk-7	$	c	hist	p_value_insigni	p_value_signi	par
+unnamed-chunk-8	$	c	hist	p_value_insigni	p_value_signi	par
+unnamed-chunk-9	$	c	hist	p_value_insigni	p_value_signi	par
+unnamed-chunk-10	$	c	hist	par	r_square_insigni	r_square_signi
+unnamed-chunk-11	$	c	hist	par	r_square_insigni	r_square_signi
+unnamed-chunk-12	$	c	hist	par	r_square_insigni	r_square_signi
+unnamed-chunk-13	n	seq
